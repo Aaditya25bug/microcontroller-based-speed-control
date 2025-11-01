@@ -1,6 +1,5 @@
 #include <LiquidCrystal.h>
 #include <PID_v1.h>
-#include <util/atomic.h>
 
 #define ENC_A_PIN 32
 #define ENC_B_PIN 33
@@ -49,7 +48,7 @@ void setup() {
   pinMode(IN2_PIN, OUTPUT);
   pinMode(ENC_A_PIN, INPUT_PULLUP);
   pinMode(ENC_B_PIN, INPUT_PULLUP);
-  attachInterrupt(digitalPinToInterrupt(ENC_A_PIN), isr_encoder, RISING);
+  attachInterrupt(digitalPinToInterrupt(ENC_A_PIN), isr_encoder, CHANGE);
   Serial.println("calibrating current sensor, ensure no load on motor.");
   long adc_sum = 0;
   for (int i = 0; i < 1000; i++) {
@@ -76,9 +75,9 @@ void loop() {
 
   if (currentTime - lastRpmTime >= 50) {
     long currentPulseCount;
-    ATOMIC_BLOCK(ATOMIC_RESTORESTATE) {
-      currentPulseCount = pulseCount;
-    }
+    noInterrupts();
+    currentPulseCount = pulseCount;
+    interrupts();
     double deltaPulses = currentPulseCount - lastPulseCount;
     double deltaTime = (currentTime - lastRpmTime) / 1000.0;
     rpm = (deltaPulses / PPR) / deltaTime * 60.0;
